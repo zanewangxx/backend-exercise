@@ -2,66 +2,67 @@ const express = require('express')
 const app = express()
 app.use(express.json())
 
-let notes = [
-  {
-    id: "1",
-    content: "HTML is easy",
-    important: true
-  },
-  {
-    id: "2",
-    content: "Browser can execute only JavaScript",
-    important: false
-  },
-  {
-    id: "3",
-    content: "GET and POST are the most important methods of HTTP protocol",
-    important: true
-  }
-]
+let persons = []
 
-app.get('/api/notes', (request, response) => {
-    response.json(notes)
+app.get('/api/persons', (request, response) => {
+    response.json(persons)
 })
 
-app.get('/api/notes/:id', (request, response) => {
-    const id = request.params.id
-    const note = notes.find(note => note.id === id)
+app.get('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    const person = persons.find(person => person.id === id)
 
-    if(note) {
-        response.json(note)
+    if(person) {
+        response.json(person)
     } else {
         response.status(404).end()
     }
 })
 
-app.delete('/api/notes/:id', (request, response) => {
-    const id = request.params.id
-    notes = notes.filter(note => note.id !== id)
+app.delete('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    persons = persons.filter(person => person.id !== id)
     response.status(204).end()
 })
 
 const generateId = () => {
-  const maxId = notes.length > 0
-    ? Math.max(...notes.map(n => n.id))
+  const maxId = persons.length > 0
+    ? Math.max(...persons.map(n => n.id))
     : 0
   return maxId + 1
 }
 
-app.post('/api/notes', (request, response) => {
+app.post('/api/persons', (request, response) => {
   const body = request.body
-  if (!body.content) {
+  if (!body.name || !body.number) {
     return response.status(400).json({
-      error: 'content missing'
+      error: 'name or number missing'
     })
   }
-  const note = {
-    content: body.content,
-    important: body.important || false,
+
+  const nameExists = persons.find(person => person.name === body.name)
+  if (nameExists) {
+    return response.status(400).json({
+      error: 'name must be unique'
+    })
+  }
+
+  const person = {
+    name: body.name,
+    number: body.number,
     id: generateId()
   }
-  notes = notes.concat(note)
-  response.json(note)
+  persons = persons.concat(person)
+  response.json(person)
+})
+
+app.get('/api/info', (request, response) => {
+  const date = new Date()
+  info = `
+  <p>Phonebook has info for ${persons.length} people</p>
+  <p>${date}</p>
+  `
+  response.send(info)
 })
 
 const PORT = 3001
