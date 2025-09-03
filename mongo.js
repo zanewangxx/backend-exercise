@@ -1,15 +1,13 @@
+require('dotenv').config()
 const mongoose = require('mongoose')
 
-if (process.argv.length < 3) {
-  console.log('give password as argument')
+const url = process.env.MONGODB_URI
+if (!url) {
+  console.error('Missing MONGODB_URI. Set it in your environment or .env.')
   process.exit(1)
 }
 
-const password = process.argv[2]
-
-const url = `mongodb+srv://wangzhen:${password}@notesdb.jzkbioj.mongodb.net/PersonRecord?retryWrites=true&w=majority&appName=notesDB`
-
-mongoose.set('strictQuery',false)
+mongoose.set('strictQuery', false)
 
 mongoose.connect(url)
 
@@ -18,24 +16,26 @@ const personSchema = new mongoose.Schema({
   number: String,
 })
 
-const Record = mongoose.model('Person', personSchema)
+const Person = mongoose.model('Person', personSchema)
 
-if(process.argv.length === 3){
-    Record.find({}).then(result => {
-        result.forEach(record => {
-            console.log(record.name, record.number)
-        })
-        mongoose.connection.close()
-    })
-}
-if (process.argv.length === 5){
-    const name = process.argv[3]
-    const number = process.argv[4]
+// Usage:
+//   node mongo.js             -> list all persons
+//   node mongo.js add Name 123-456 -> add a person
 
-    const record = new Record({name: name, number: number})
+const [,, cmd, name, number] = process.argv
 
-    record.save().then(() => {
-        console.log(`added ${name} number: ${number} to phonebook`)
-        mongoose.connection.close()
-    })
+if (!cmd) {
+  Person.find({}).then((result) => {
+    result.forEach((p) => console.log(p.name, p.number))
+    mongoose.connection.close()
+  })
+} else if (cmd === 'add' && name && number) {
+  const person = new Person({ name, number })
+  person.save().then(() => {
+    console.log(`added ${name} number: ${number} to phonebook`)
+    mongoose.connection.close()
+  })
+} else {
+  console.log('Usage:\n  node mongo.js\n  node mongo.js add "Name" "123-456"')
+  mongoose.connection.close()
 }
